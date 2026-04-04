@@ -16,7 +16,7 @@ class BodyMetrics {
   double protein = 0; 
   double bmr = 0; 
 
-  BodyMetrics(); // مشيد فارغ ضروري لـ Isar
+  BodyMetrics(); 
 }
 
 @collection
@@ -24,7 +24,9 @@ class FoodTemplate {
   Id id = Isar.autoIncrement;
   String? name;
   double? cal;
-  FoodTemplate({required this.name, required this.cal});
+
+  // تم التعديل هنا: إزالة required لتتوافق مع Isar المولد تلقائياً
+  FoodTemplate({this.name, this.cal});
 }
 
 @collection
@@ -33,6 +35,5 @@ class DailyMealLog {
   DateTime date = DateTime.now();
   double targetCal = 2200;
 
-  // ✅ التعديل الجوهري هنا: نستخدم Links للربط بين الجداول
   final meals = IsarLinks<FoodTemplate>(); 
 }

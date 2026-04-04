@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'app_state.dart'; // سننشئه في الخطوة التالية
-import 'app_theme.dart'; // سننشئه في الخطوة التالية
+import 'app_state.dart';
+import 'app_theme.dart';
+// استيراد الصفحات (تأكد من وجود هذه الملفات أو استبدلها بـ Widgets)
+// import 'pages/nutrition_page.dart'; الخ..
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // تهيئة Isar (قاعدة البيانات المحلية)
+  
+  // الآن ستعمل لأننا أضفنا الدالة كـ static في AppState
   await AppState.initializeIsar();
-  // تهيئة الإشعارات المحلية
-  // ... FlutterLocalNotificationsPlugin
 
   runApp(
     ChangeNotifierProvider(
@@ -25,7 +26,7 @@ class FitnessAppLocked extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: appThemeDataLocked, // تطبيق الثيم الأسود الفخم المثبت
+      theme: appThemeDataLocked,
       home: const MainTabScreen(),
     );
   }
@@ -38,21 +39,22 @@ class MainTabScreen extends StatefulWidget {
 }
 
 class _MainTabScreenState extends State<MainTabScreen> {
-  int _currentTab = 0; // 0: التغذية، 1: الميزان، 2: التمارين، 3: الإنجازات
+  int _currentTab = 0;
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-
     return Scaffold(
       appBar: AppBar(title: const Text("تتبع لياقتي")),
-      body: [
-        const NutritionDashboardPage(), // شاشة التغذية المعتمدة (التقويم، شريط السعرات الدائري، الوجبات المنسدلة)
-        const BodyAnalysisPage(), // شاشة تحليل الجسم (الرسوم البيانية fl_chart، النموذج الكامل لـ Eufy C1)
-        const WorkoutsSchedulePage(), // شاشة التمارين والجدولة (منطق الجدولة بالأيام)
-        const AchievementsPage(), // شاشة الإنجازات والأوسمة
-      ][_currentTab],
-      // النافبار العصري العائم المثبت (Floating Modern Bottom Nav)
+      // تم التعديل هنا: حذفنا const من أمام الشاشات
+      body: IndexedStack(
+        index: _currentTab,
+        children: [
+          NutritionDashboardPage(), 
+          BodyAnalysisPage(),      
+          WorkoutsSchedulePage(),  
+          AchievementsPage(),      
+        ],
+      ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.only(left: 30, right: 30, bottom: 25),
         height: 70,
@@ -89,3 +91,9 @@ class _MainTabScreenState extends State<MainTabScreen> {
     );
   }
 }
+
+// تعريفات مؤقتة للشاشات لضمان عمل الكود (استبدلها بملفاتك الحقيقية)
+class NutritionDashboardPage extends StatelessWidget { const NutritionDashboardPage({super.key}); @override Widget build(BuildContext context) => Container(); }
+class BodyAnalysisPage extends StatelessWidget { const BodyAnalysisPage({super.key}); @override Widget build(BuildContext context) => Container(); }
+class WorkoutsSchedulePage extends StatelessWidget { const WorkoutsSchedulePage({super.key}); @override Widget build(BuildContext context) => Container(); }
+class AchievementsPage extends StatelessWidget { const AchievementsPage({super.key}); @override Widget build(BuildContext context) => Container(); }

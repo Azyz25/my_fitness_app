@@ -1390,10 +1390,11 @@ FoodTemplate _foodTemplateDeserialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  final object = FoodTemplate();
-  object.cal = reader.readDoubleOrNull(offsets[0]);
+  final object = FoodTemplate(
+    cal: reader.readDoubleOrNull(offsets[0]),
+    name: reader.readStringOrNull(offsets[1]),
+  );
   object.id = id;
-  object.name = reader.readStringOrNull(offsets[1]);
   return object;
 }
 
