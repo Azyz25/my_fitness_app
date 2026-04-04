@@ -24,6 +24,7 @@ class FoodTemplate {
   Id id = Isar.autoIncrement;
   String? name;
   double? cal;
+  FoodTemplate({required this.name, required this.cal});
 }
 
 @collection
