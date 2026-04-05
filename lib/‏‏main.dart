@@ -7,21 +7,33 @@ import 'features/splash/splash_screen.dart';
 import 'main_shell.dart';
 import 'core/state/app_state.dart';  
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
   ));
+
+  // ✅ try-catch عشان لو Isar فشل ما يبقى شاشة بيضاء
+  try {
+    await AppState.initialize();
+  } catch (e) {
+    debugPrint('Isar init failed: $e');
+  }
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AppState()),
+      ],
       child: const TechneApp(),
     ),
   );
 }
-
 class TechneApp extends StatefulWidget {
   const TechneApp({super.key});
 

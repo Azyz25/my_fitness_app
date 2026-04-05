@@ -8,47 +8,44 @@ class AppState extends ChangeNotifier {
   static Isar? _isar;
   static Isar get isar => _isar!;
 
-  // ─── Initialize Isar ─────────────────────────────────────────────────────
   static Future<void> initialize() async {
-    final dir = await getApplicationDocumentsDirectory();
-    _isar = await Isar.open(
-      [
-        BodyMetricsDBSchema,
-        FoodTemplateDBSchema,
-        DailyMealLogDBSchema,
-        WorkoutSessionDBSchema,
-        HabitDBSchema,
-      ],
-      directory: dir.path,
-      name: 'techne_fitness',
-    );
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      _isar = await Isar.open(
+        [
+          BodyMetricsDBSchema,
+          FoodTemplateDBSchema,
+          DailyMealLogDBSchema,
+          WorkoutSessionDBSchema,
+          HabitDBSchema,
+        ],
+        directory: dir.path,
+        name: 'techne_fitness',
+      );
+    } catch (e) {
+      debugPrint('⚠️ Isar failed: $e');
+    }
   }
 
-  // ─── Weight / Measurements ───────────────────────────────────────────────
+  AppState() {
+    initialize();
+  }
+
+  // ─── Weight ───────────────────────────────────────────────────────────────
   List<WeightEntry> _weightEntries = List.from(SampleData.weights);
   List<WeightEntry> get weightEntries => _weightEntries;
-
-  Future<void> loadWeightEntries() async {
-    try {
-      final dbEntries = await isar.bodyMetricsDBs.where().findAll();
-      if (dbEntries.isNotEmpty) {
-        _weightEntries = dbEntries.map(WeightEntry.fromDB).toList();
-        notifyListeners();
-      }
-    } catch (_) {}
-  }
 
   Future<void> addWeightEntry(WeightEntry entry) async {
     _weightEntries.add(entry);
     notifyListeners();
     try {
-      await isar.writeTxn(() async {
-        await isar.bodyMetricsDBs.put(entry.toDB());
+      await _isar?.writeTxn(() async {
+        await _isar!.bodyMetricsDBs.put(entry.toDB());
       });
     } catch (_) {}
   }
 
-  // ─── Meals ───────────────────────────────────────────────────────────────
+  // ─── Meals ────────────────────────────────────────────────────────────────
   List<MealEntry> _meals = List.from(SampleData.meals);
   List<MealEntry> get meals => _meals;
 
@@ -60,11 +57,6 @@ class AppState extends ChangeNotifier {
   void addMeal(MealEntry meal) {
     _meals.add(meal);
     notifyListeners();
-    try {
-      isar.writeTxn(() async {
-        await isar.foodTemplateDBs.put(meal.toDB());
-      });
-    } catch (_) {}
   }
 
   void removeMeal(int index) {
@@ -76,7 +68,8 @@ class AppState extends ChangeNotifier {
   List<ExerciseEntry> _exercises = List.from(SampleData.exercises);
   List<ExerciseEntry> get exercises => _exercises;
 
-  int get completedExercises => _exercises.where((e) => e.completedSets >= e.sets).length;
+  int get completedExercises =>
+      _exercises.where((e) => e.completedSets >= e.sets).length;
 
   void addExercise(ExerciseEntry ex) {
     _exercises.add(ex);
@@ -108,12 +101,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Templates (Food presets) ─────────────────────────────────────────────
+  // ─── Templates ────────────────────────────────────────────────────────────
   List<MealEntry> savedTemplates = [
-    MealEntry(name: 'بيض مسلوق',   calories: 140, protein: 12, carbs: 1, fat: 10, grams: 100, time: DateTime.now()),
-    MealEntry(name: 'صدر دجاج',    calories: 330, protein: 40, carbs: 0, fat: 8,  grams: 200, time: DateTime.now()),
-    MealEntry(name: 'أرز أبيض',    calories: 180, protein: 4,  carbs: 38, fat: 0.5, grams: 100, time: DateTime.now()),
-    MealEntry(name: 'سلطة خضراء',  calories: 120, protein: 4,  carbs: 12, fat: 6,  grams: 150, time: DateTime.now()),
+    MealEntry(name: 'بيض مسلوق',  calories: 140, protein: 12, carbs: 1,  fat: 10, grams: 100, time: DateTime.now()),
+    MealEntry(name: 'صدر دجاج',   calories: 330, protein: 40, carbs: 0,  fat: 8,  grams: 200, time: DateTime.now()),
+    MealEntry(name: 'أرز أبيض',   calories: 180, protein: 4,  carbs: 38, fat: 0.5, grams: 100, time: DateTime.now()),
+    MealEntry(name: 'سلطة خضراء', calories: 120, protein: 4,  carbs: 12, fat: 6,  grams: 150, time: DateTime.now()),
   ];
 
   void addFromTemplate(MealEntry template) {
@@ -127,7 +120,8 @@ class AppState extends ChangeNotifier {
       time: DateTime.now(),
     ));
   }
-}
+
+} // ← إغلاق AppState
 
 // ─── Theme Provider ───────────────────────────────────────────────────────────
 class ThemeProvider extends ChangeNotifier {
