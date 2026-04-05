@@ -2,32 +2,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'core/state/app_state.dart';
 import 'core/theme/app_theme.dart';
 import 'features/splash/splash_screen.dart';
 import 'main_shell.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Lock portrait
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-
-  // Status bar style
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
   ));
-
-  // Initialize Isar DB
-  await AppState.initialize();
-
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AppState()),
-      ],
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
       child: const TechneApp(),
     ),
   );
