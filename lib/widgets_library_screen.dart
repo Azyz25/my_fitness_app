@@ -1,9 +1,9 @@
 // lib/features/widgets_library/widgets_library_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/models/models.dart';
-import '../../shared/widgets/shared_widgets.dart';
+import 'core/theme/app_theme.dart';
+import 'shared/models/models.dart';
+import 'shared/widgets/shared_widgets.dart';
 
 class WidgetsLibraryScreen extends StatelessWidget {
   const WidgetsLibraryScreen({super.key});

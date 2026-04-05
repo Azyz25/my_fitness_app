@@ -48,49 +48,46 @@ class AppTheme {
   ];
 
   // ─── Dark Theme ───────────────────────────────────────────────────────────
-  static ThemeData darkTheme() {
-    return ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.darkBg,
-      primaryColor: AppColors.neonGreen,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.neonGreen,
-        surface: AppColors.darkCard,
-        background: AppColors.darkBg,
-        onPrimary: Colors.black,
-        onSurface: AppColors.darkText,
-        onBackground: AppColors.darkText,
+ static ThemeData darkTheme() {
+  return ThemeData(
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: AppColors.darkBg,
+    primaryColor: AppColors.neonGreen,
+    colorScheme: const ColorScheme.dark(
+      primary: AppColors.neonGreen,
+      surface: AppColors.darkCard,
+      onPrimary: Colors.black,
+      onSurface: AppColors.darkText,
+    ),
+    textTheme: _buildTextTheme(AppColors.darkText, AppColors.darkTextMuted),
+    appBarTheme: AppBarTheme(
+      backgroundColor: AppColors.darkBg,
+      foregroundColor: AppColors.darkText,
+      elevation: 0,
+      centerTitle: true,
+      titleTextStyle: GoogleFonts.tajawal(
+        fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.darkText,
       ),
-      textTheme: _buildTextTheme(AppColors.darkText, AppColors.darkTextMuted),
-      appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.darkBg,
-        foregroundColor: AppColors.darkText,
-        elevation: 0,
-        centerTitle: true,
-        titleTextStyle: GoogleFonts.tajawal(
-          fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.darkText,
-        ),
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: AppColors.darkBg,
+      selectedItemColor: AppColors.neonGreen,
+      unselectedItemColor: AppColors.darkTextMuted,
+      type: BottomNavigationBarType.fixed,
+      elevation: 0,
+    ),
+    cardTheme: CardThemeData(               // ← بدون const
+      color: AppColors.darkCard,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.darkBorder, width: 1),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.darkBg,
-        selectedItemColor: AppColors.neonGreen,
-        unselectedItemColor: AppColors.darkTextMuted,
-        type: BottomNavigationBarType.fixed,
-        elevation: 0,
-      ),
-      cardTheme: CardTheme(
-        color: AppColors.darkCard,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.darkBorder, width: 1),
-        ),
-      ),
-      dividerColor: AppColors.darkBorder,
-      useMaterial3: true,
-    );
-  }
-
+    ),
+    dividerColor: AppColors.darkBorder,
+    useMaterial3: true,
+  );
+}
   // ─── Light Theme ──────────────────────────────────────────────────────────
   static ThemeData lightTheme() {
     return ThemeData(
@@ -100,10 +97,8 @@ class AppTheme {
       colorScheme: const ColorScheme.light(
         primary: AppColors.neonGreen,
         surface: AppColors.lightCard,
-        background: AppColors.lightBg,
         onPrimary: Colors.black,
         onSurface: AppColors.lightText,
-        onBackground: AppColors.lightText,
       ),
       textTheme: _buildTextTheme(AppColors.lightText, AppColors.lightTextMuted),
       appBarTheme: AppBarTheme(
@@ -122,14 +117,14 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
-      cardTheme: CardTheme(
-        color: AppColors.lightCard,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.lightBorder, width: 1),
-        ),
-      ),
+cardTheme: CardThemeData(
+  color: AppColors.darkCard,
+  elevation: 0,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(16),
+    side: const BorderSide(color: AppColors.darkBorder, width: 1),
+  ),
+),
       dividerColor: AppColors.lightBorder,
       useMaterial3: true,
     );

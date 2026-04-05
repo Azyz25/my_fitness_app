@@ -2,10 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../app_theme.dart';
-import '../models.dart';
-import '../../shared/widgets/shared_widgets.dart';
-import '../scale/add_measurement_sheet.dart';
+import 'core/theme/app_theme.dart';
+import 'core/state/app_state.dart';
+import 'shared/models/models.dart';
+import 'shared/widgets/shared_widgets.dart';
+import 'features/scale/add_measurement_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

@@ -1,9 +1,9 @@
 // lib/features/workouts/workouts_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/models/models.dart';
-import '../../shared/widgets/shared_widgets.dart';
+import 'core/theme/app_theme.dart';
+import 'shared/models/models.dart';
+import 'shared/widgets/shared_widgets.dart';
 
 class WorkoutsScreen extends StatefulWidget {
   const WorkoutsScreen({super.key});
