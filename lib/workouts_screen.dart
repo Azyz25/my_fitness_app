@@ -1,141 +1,215 @@
 // lib/features/workouts/workouts_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'core/theme/app_theme.dart';
-import 'shared/models/models.dart';
-import 'shared/widgets/shared_widgets.dart';
+import 'package:provider/provider.dart';
+import '../../core/theme/app_theme.dart';
+import '../../shared/models/models.dart';
+import '../../shared/widgets/shared_widgets.dart';
+import '../fitness_provider.dart';
 
-class WorkoutsScreen extends StatefulWidget {
+class WorkoutsScreen extends StatelessWidget {
   const WorkoutsScreen({super.key});
 
-  @override
-  State<WorkoutsScreen> createState() => _WorkoutsScreenState();
-}
-
-class _WorkoutsScreenState extends State<WorkoutsScreen> {
-  List<ExerciseEntry> _exercises = List.from(SampleData.exercises);
-
-  final List<bool> _completedDays = [true, false, true, true, false, false, false];
-
-  int get _completedCount => _exercises.where((e) => e.completedSets >= e.sets).length;
+  static const _completedDays = [true, false, true, true, false, false, false];
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final mutedColor = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    return Consumer<FitnessProvider>(
+      builder: (context, provider, _) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final mutedColor =
+            isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+        final exercises = provider.exercises;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('التمارين'),
-        leading: const BackButton(),
-        actions: [
-          IconButton(icon: const Icon(Icons.person_outline), onPressed: () {}),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // ─── Weekly Plan ───
-            NeonCard(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const SectionTitle('خطة التمارين الأسبوعية'),
-                  const SizedBox(height: 12),
-                  WeekDayStrip(
-                    todayIndex: 3, // Thursday
-                    completedDays: _completedDays,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('التمارين'),
+            leading: const BackButton(),
+            actions: [
+              // Reset all sets
+              IconButton(
+                onPressed: exercises.isEmpty
+                    ? null
+                    : () => _confirmReset(context, provider),
+                icon: const Icon(Icons.refresh_rounded, size: 20),
+                tooltip: 'إعادة تعيين الجولات',
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // ─── Weekly Plan ───
+                NeonCard(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
-                        '70% تم الإنجاز',
-                        style: GoogleFonts.tajawal(fontSize: 11, color: mutedColor),
+                      const SectionTitle('خطة التمارين الأسبوعية'),
+                      const SizedBox(height: 12),
+                      const WeekDayStrip(
+                        todayIndex: 3,
+                        completedDays: _completedDays,
                       ),
-                      const SizedBox.shrink(),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            exercises.isEmpty
+                                ? '0%'
+                                : '${((provider.completedExercises / exercises.length) * 100).toInt()}% تم الإنجاز',
+                            style: GoogleFonts.tajawal(
+                                fontSize: 11, color: mutedColor),
+                          ),
+                          Text(
+                            '${provider.completedExercises}/${exercises.length} مكتملة',
+                            style: GoogleFonts.tajawal(
+                                fontSize: 11,
+                                color: AppColors.neonGreen,
+                                fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      NeonProgressBar(
+                        value: exercises.isEmpty
+                            ? 0
+                            : provider.completedExercises / exercises.length,
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  const NeonProgressBar(value: 0.7),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // ─── Add Exercise Button ───
-            NeonButton(
-              label: '+ إضافة تمرين جديد',
-              onTap: () => _showAddExerciseSheet(context),
-            ),
-            const SizedBox(height: 16),
-
-            // ─── Today's Exercises ───
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$_completedCount/${_exercises.length} مكتملة',
-                  style: GoogleFonts.tajawal(
-                      fontSize: 11, color: AppColors.neonGreen, fontWeight: FontWeight.w600),
                 ),
+                const SizedBox(height: 12),
+
+                // ─── Add Button ───
+                NeonButton(
+                  label: '+ إضافة تمرين جديد',
+                  onTap: () => _showAddExerciseSheet(context, provider),
+                ),
+                const SizedBox(height: 16),
+
+                // ─── Today's Exercises ───
                 const SectionTitle('تمارين اليوم'),
+                const SizedBox(height: 8),
+
+                if (exercises.isEmpty)
+                  _EmptyState(
+                    icon: '🏋',
+                    message: 'لم تُضَف تمارين بعد.\nاضغط "إضافة تمرين" للبدء.',
+                    isDark: isDark,
+                  )
+                else
+                  ...exercises.asMap().entries.map((entry) {
+                    return _ExerciseCard(
+                      exercise: entry.value,
+                      onStartSet: () =>
+                          _showSetSheet(context, provider, entry.key),
+                      onRemove: () => provider.removeExercise(entry.key),
+                    );
+                  }),
+
+                const SizedBox(height: 80),
               ],
             ),
-            const SizedBox(height: 8),
-
-            ..._exercises.asMap().entries.map((e) {
-              return _ExerciseCard(
-                exercise: e.value,
-                onStartSet: () => _showSetSheet(context, e.key),
-                onTap: () => _showSetSheet(context, e.key),
-              );
-            }),
-            const SizedBox(height: 80),
-          ],
-        ),
-      ),
+          ),
+          // FAB on the LEFT side
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.startFloat,
+          floatingActionButton: NeonFAB(
+            onTap: () => _showAddExerciseSheet(context, provider),
+          ),
+        );
+      },
     );
   }
 
-  void _showSetSheet(BuildContext context, int index) {
+  // ── Sheets & dialogs ───────────────────────────────────────────────────────
+
+  void _showSetSheet(
+      BuildContext context, FitnessProvider provider, int index) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _SetDetailSheet(
-        exercise: _exercises[index],
-        onLogSet: () {
-          setState(() {
-            if (_exercises[index].completedSets < _exercises[index].sets) {
-              _exercises[index] = ExerciseEntry(
-                name: _exercises[index].name,
-                muscleGroup: _exercises[index].muscleGroup,
-                sets: _exercises[index].sets,
-                reps: _exercises[index].reps,
-                weightKg: _exercises[index].weightKg,
-                completedSets: _exercises[index].completedSets + 1,
-                emoji: _exercises[index].emoji,
-              );
-            }
-          });
-        },
+        exercise: provider.exercises[index],
+        onLogSet: () => provider.logSet(index),
         onEndWorkout: () => Navigator.pop(context),
       ),
     );
   }
 
-  void _showAddExerciseSheet(BuildContext context) {
+  void _showAddExerciseSheet(
+      BuildContext context, FitnessProvider provider) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _AddExerciseSheet(
-        onAdd: (ex) => setState(() => _exercises.add(ex)),
+        onAdd: (ex) => provider.addExercise(ex),
+      ),
+    );
+  }
+
+  void _confirmReset(BuildContext context, FitnessProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.darkCard
+            : AppColors.lightBg,
+        title: Text('إعادة تعيين؟',
+            style: GoogleFonts.tajawal(fontWeight: FontWeight.w800)),
+        content:
+            Text('سيتم إعادة تعيين جميع الجولات إلى الصفر.',
+                style: GoogleFonts.tajawal()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('إلغاء', style: GoogleFonts.tajawal()),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.resetExercises();
+              Navigator.pop(ctx);
+            },
+            child: Text('إعادة تعيين',
+                style: GoogleFonts.tajawal(color: AppColors.neonGreen)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+class _EmptyState extends StatelessWidget {
+  final String icon;
+  final String message;
+  final bool isDark;
+  const _EmptyState(
+      {required this.icon, required this.message, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 40)),
+          const SizedBox(height: 12),
+          Text(message,
+              style: GoogleFonts.tajawal(
+                  fontSize: 13,
+                  color: isDark
+                      ? AppColors.darkTextMuted
+                      : AppColors.lightTextMuted),
+              textAlign: TextAlign.center),
+        ],
       ),
     );
   }
@@ -145,12 +219,12 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
 class _ExerciseCard extends StatelessWidget {
   final ExerciseEntry exercise;
   final VoidCallback onStartSet;
-  final VoidCallback onTap;
+  final VoidCallback onRemove;
 
   const _ExerciseCard({
     required this.exercise,
     required this.onStartSet,
-    required this.onTap,
+    required this.onRemove,
   });
 
   @override
@@ -159,7 +233,7 @@ class _ExerciseCard extends StatelessWidget {
     final isComplete = exercise.completedSets >= exercise.sets;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: onStartSet,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
@@ -168,12 +242,14 @@ class _ExerciseCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isComplete
-                ? AppColors.neonGreen.withOpacity(0.6)
+                ? AppColors.neonGreen.withOpacity(0.55)
                 : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
             width: isComplete ? 1.5 : 1,
           ),
           boxShadow: isComplete
-              ? [BoxShadow(color: AppColors.neonGreen.withOpacity(0.08), blurRadius: 12)]
+              ? [BoxShadow(
+                  color: AppColors.neonGreen.withOpacity(0.07),
+                  blurRadius: 12)]
               : null,
         ),
         child: Column(
@@ -183,22 +259,51 @@ class _ExerciseCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard2 : AppColors.lightCard2,
-                    borderRadius: BorderRadius.circular(8),
+                // Remove button (small)
+                GestureDetector(
+                  onTap: onRemove,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.darkCard2
+                          : AppColors.lightCard2,
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(
+                          color: AppColors.red.withOpacity(0.4)),
+                    ),
+                    child: const Icon(Icons.delete_outline,
+                        size: 14, color: AppColors.red),
                   ),
-                  child: Center(child: Text(exercise.emoji, style: const TextStyle(fontSize: 18))),
                 ),
-                Text(
-                  exercise.name,
-                  style: GoogleFonts.tajawal(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.darkText : AppColors.lightText,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      exercise.name,
+                      style: GoogleFonts.tajawal(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: isDark
+                            ? AppColors.darkText
+                            : AppColors.lightText,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkCard2
+                            : AppColors.lightCard2,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                          child: Text(exercise.emoji,
+                              style: const TextStyle(fontSize: 18))),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -217,43 +322,53 @@ class _ExerciseCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
-            // Footer: dots + button
+            // Footer
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Start button
-                GestureDetector(
-                  onTap: onStartSet,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: isComplete ? AppColors.neonGreenDim : AppColors.neonGreen,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: isComplete ? null : AppTheme.neonGlowList(blur: 8, opacity: 0.3),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isComplete ? Icons.check : Icons.timer_outlined,
-                          size: 14,
-                          color: isComplete ? AppColors.neonGreen : Colors.black,
+                // Action button
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isComplete
+                        ? AppColors.neonGreenDim
+                        : AppColors.neonGreen,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: isComplete
+                        ? null
+                        : AppTheme.neonGlowList(blur: 7, opacity: 0.25),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isComplete
+                            ? Icons.check_rounded
+                            : Icons.timer_outlined,
+                        size: 14,
+                        color: isComplete
+                            ? AppColors.neonGreen
+                            : Colors.black,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isComplete ? 'مكتمل' : 'بدء الجولة',
+                        style: GoogleFonts.tajawal(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: isComplete
+                              ? AppColors.neonGreen
+                              : Colors.black,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          isComplete ? 'مكتمل' : 'بدء',
-                          style: GoogleFonts.tajawal(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: isComplete ? AppColors.neonGreen : Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
                 // Set dots
-                SetDots(total: exercise.sets, completed: exercise.completedSets),
+                SetDots(
+                    total: exercise.sets,
+                    completed: exercise.completedSets),
               ],
             ),
           ],
@@ -311,30 +426,34 @@ class _SetDetailSheetState extends State<_SetDetailSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentSet = (widget.exercise.completedSets + 1).clamp(1, widget.exercise.sets);
+    final currentSet =
+        (widget.exercise.completedSets + 1).clamp(1, widget.exercise.sets);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: NeonBottomSheet(
-        title: 'تفاصيل جولة تمرين ${widget.exercise.muscleGroup}',
+        title: 'تفاصيل جولة – ${widget.exercise.muscleGroup}',
         children: [
-          NeonInputField(label: 'اسم التمرين', value: widget.exercise.name),
           NeonInputField(
-              label: 'الجولة الحالية',
-              value: '$currentSet/${widget.exercise.sets}'),
-          // Weight stepper
+              label: 'اسم التمرين', value: widget.exercise.name),
+          NeonInputField(
+            label: 'الجولة الحالية',
+            value: '$currentSet / ${widget.exercise.sets}',
+          ),
           _stepperRow(
             'الوزن المستخدم (kg)',
             _weight.toStringAsFixed(1),
-            onMinus: () => setState(() => _weight = (_weight - 2.5).clamp(0, 500)),
+            onMinus: () =>
+                setState(() => _weight = (_weight - 2.5).clamp(0, 500)),
             onPlus: () => setState(() => _weight += 2.5),
             isDark: isDark,
           ),
-          // Reps stepper
           _stepperRow(
             'التكرار المنجز',
             '$_reps',
-            onMinus: () => setState(() => _reps = (_reps - 1).clamp(1, 100)),
+            onMinus: () =>
+                setState(() => _reps = (_reps - 1).clamp(1, 100)),
             onPlus: () => setState(() => _reps++),
             isDark: isDark,
           ),
@@ -343,7 +462,7 @@ class _SetDetailSheetState extends State<_SetDetailSheet> {
             children: [
               Expanded(
                 child: NeonButton(
-                  label: 'إنهاء الجولة',
+                  label: 'إغلاق',
                   outlined: true,
                   height: 44,
                   onTap: () => Navigator.pop(context),
@@ -364,7 +483,10 @@ class _SetDetailSheetState extends State<_SetDetailSheet> {
           ),
           const SizedBox(height: 8),
           GestureDetector(
-            onTap: widget.onEndWorkout,
+            onTap: () {
+              widget.onEndWorkout();
+              Navigator.pop(context);
+            },
             child: Container(
               width: double.infinity,
               height: 44,
@@ -391,8 +513,13 @@ class _SetDetailSheetState extends State<_SetDetailSheet> {
     );
   }
 
-  Widget _stepperRow(String label, String value,
-      {required VoidCallback onMinus, required VoidCallback onPlus, required bool isDark}) {
+  Widget _stepperRow(
+    String label,
+    String value, {
+    required VoidCallback onMinus,
+    required VoidCallback onPlus,
+    required bool isDark,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -404,38 +531,43 @@ class _SetDetailSheetState extends State<_SetDetailSheet> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Stepper
           Row(
             children: [
               GestureDetector(
                 onTap: onPlus,
                 child: Container(
-                  width: 26,
-                  height: 26,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     color: AppColors.neonGreen,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(7),
                   ),
                   child: const Icon(Icons.add, size: 16, color: Colors.black),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(value,
                   style: GoogleFonts.tajawal(
-                      fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.neonGreen)),
-              const SizedBox(width: 8),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.neonGreen)),
+              const SizedBox(width: 10),
               GestureDetector(
                 onTap: onMinus,
                 child: Container(
-                  width: 26,
-                  height: 26,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.darkCard : AppColors.lightCard,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.neonGreen.withOpacity(0.4)),
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(
+                        color: AppColors.neonGreen.withOpacity(0.4)),
                   ),
-                  child: Icon(Icons.remove, size: 16,
-                      color: isDark ? AppColors.darkText : AppColors.lightText),
+                  child: Icon(Icons.remove,
+                      size: 16,
+                      color: isDark
+                          ? AppColors.darkText
+                          : AppColors.lightText),
                 ),
               ),
             ],
@@ -443,7 +575,9 @@ class _SetDetailSheetState extends State<_SetDetailSheet> {
           Text(label,
               style: GoogleFonts.tajawal(
                   fontSize: 12,
-                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted)),
+                  color: isDark
+                      ? AppColors.darkTextMuted
+                      : AppColors.lightTextMuted)),
         ],
       ),
     );
@@ -452,8 +586,7 @@ class _SetDetailSheetState extends State<_SetDetailSheet> {
 
 // ─── Add Exercise Sheet ───────────────────────────────────────────────────────
 class _AddExerciseSheet extends StatefulWidget {
-  final Function(ExerciseEntry) onAdd;
-
+  final void Function(ExerciseEntry) onAdd;
   const _AddExerciseSheet({required this.onAdd});
 
   @override
@@ -461,47 +594,110 @@ class _AddExerciseSheet extends StatefulWidget {
 }
 
 class _AddExerciseSheetState extends State<_AddExerciseSheet> {
-  final _nameCtrl = TextEditingController();
-  final _setsCtrl = TextEditingController(text: '3');
-  final _repsCtrl = TextEditingController(text: '12');
+  final _nameCtrl   = TextEditingController();
+  final _setsCtrl   = TextEditingController(text: '3');
+  final _repsCtrl   = TextEditingController(text: '12');
   final _weightCtrl = TextEditingController(text: '60');
+  String _selectedEmoji = '💪';
+  String? _error;
+
+  static const _emojis = ['💪', '🦵', '🏋', '🤸', '🏃', '🚴', '🧘'];
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _setsCtrl.dispose();
+    _repsCtrl.dispose();
+    _weightCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_nameCtrl.text.trim().isEmpty) {
+      setState(() => _error = 'يرجى إدخال اسم التمرين');
+      return;
+    }
+    widget.onAdd(ExerciseEntry(
+      name: _nameCtrl.text.trim(),
+      muscleGroup: _nameCtrl.text.trim(),
+      sets: int.tryParse(_setsCtrl.text) ?? 3,
+      reps: int.tryParse(_repsCtrl.text) ?? 12,
+      weightKg: double.tryParse(_weightCtrl.text) ?? 0,
+      emoji: _selectedEmoji,
+    ));
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: NeonBottomSheet(
         title: 'إضافة تمرين جديد',
         children: [
-          _field('اسم التمرين', _nameCtrl, isDark),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(_error!,
+                  style: GoogleFonts.tajawal(
+                      fontSize: 12, color: AppColors.red),
+                  textAlign: TextAlign.center),
+            ),
+          // Emoji picker
+          SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              children: _emojis.map((e) {
+                final selected = e == _selectedEmoji;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedEmoji = e),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: const EdgeInsets.only(right: 8),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.neonGreenDim
+                          : (isDark
+                              ? AppColors.darkCard2
+                              : AppColors.lightCard2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: selected
+                            ? AppColors.neonGreen
+                            : (isDark
+                                ? AppColors.darkBorder
+                                : AppColors.lightBorder),
+                      ),
+                    ),
+                    child: Center(
+                        child: Text(e,
+                            style: const TextStyle(fontSize: 20))),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _field('اسم التمرين *', _nameCtrl, isDark),
           _field('عدد المجموعات', _setsCtrl, isDark, isNum: true),
           _field('عدد التكرارات', _repsCtrl, isDark, isNum: true),
           _field('الوزن (kg)', _weightCtrl, isDark, isNum: true),
           const SizedBox(height: 8),
-          NeonButton(
-            label: 'إضافة التمرين',
-            onTap: () {
-              if (_nameCtrl.text.isNotEmpty) {
-                widget.onAdd(ExerciseEntry(
-                  name: _nameCtrl.text,
-                  muscleGroup: _nameCtrl.text,
-                  sets: int.tryParse(_setsCtrl.text) ?? 3,
-                  reps: int.tryParse(_repsCtrl.text) ?? 12,
-                  weightKg: double.tryParse(_weightCtrl.text) ?? 60,
-                  emoji: '💪',
-                ));
-                Navigator.pop(context);
-              }
-            },
-          ),
+          NeonButton(label: 'إضافة التمرين', onTap: _submit),
           const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  Widget _field(String label, TextEditingController ctrl, bool isDark, {bool isNum = false}) {
+  Widget _field(String label, TextEditingController ctrl, bool isDark,
+      {bool isNum = false}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -512,16 +708,22 @@ class _AddExerciseSheetState extends State<_AddExerciseSheet> {
       child: TextField(
         controller: ctrl,
         textAlign: TextAlign.right,
-        keyboardType: isNum ? TextInputType.number : TextInputType.text,
+        keyboardType:
+            isNum ? TextInputType.number : TextInputType.text,
         textDirection: TextDirection.rtl,
         style: GoogleFonts.tajawal(
-            fontSize: 13, color: isDark ? AppColors.darkText : AppColors.lightText),
+            fontSize: 13,
+            color: isDark ? AppColors.darkText : AppColors.lightText),
         decoration: InputDecoration(
           hintText: label,
           hintStyle: GoogleFonts.tajawal(
-              fontSize: 12, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
+              fontSize: 12,
+              color: isDark
+                  ? AppColors.darkTextMuted
+                  : AppColors.lightTextMuted),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         ),
       ),
     );
